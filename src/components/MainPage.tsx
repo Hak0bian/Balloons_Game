@@ -5,6 +5,7 @@ import Leaderboard from "./Leaderboard";
 import { loadUsers, saveUsers, saveCurrentUser } from "../storage";
 import type { BalloonType, User } from "../types";
 import Modal from "./Modal";
+import backgroundMusic from "../assets/sounds/bg-music.mp3";
 type GameState = "idle" | "running" | "paused" | "ended";
 
 
@@ -20,6 +21,7 @@ const MainPage = () => {
     const timerRef = useRef<number | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalResult, setModalResult] = useState<"win" | "lose">("win");
+    const bgAudioRef = useRef(new Audio(backgroundMusic));
 
     const getSpeed = () => {
         switch (currentUser?.difficulty) {
@@ -40,7 +42,7 @@ const MainPage = () => {
         spawnRef.current = window.setInterval(() => {
             setBalloons(prev => [
                 ...prev,
-                { id: Math.random(), left: Math.random() * 80 }
+                { id: Math.random(), left: Math.random() * 75 }
             ]);
         }, 800);
 
@@ -127,6 +129,46 @@ const MainPage = () => {
         }
     }, [gameState, missed]);
 
+    const cancelGame = () => {
+        if (currentUser) {
+            const updatedUsers = users.filter(
+                u => u.nickname !== currentUser.nickname
+            );
+            setUsers(updatedUsers);
+            saveUsers(updatedUsers);
+        }
+
+        clearIntervals();
+        setGameState("idle");
+        setBalloons([]);
+        setTimeLeft(30);
+        setMissed(0);
+        setModalOpen(false);
+        setCurrentUser(null);
+        localStorage.removeItem("current_user");
+    };
+
+    useEffect(() => {
+        const bgAudio = bgAudioRef.current;
+        bgAudio.loop = true;
+
+        if (currentUser?.music && gameState === "running") {
+            bgAudio.play().catch(() => {}); 
+        } else {
+            bgAudio.pause();
+        }
+    }, [currentUser?.music, gameState]);
+
+
+    useEffect(() => {
+        const bgAudio = bgAudioRef.current;
+        if (currentUser?.music) {
+            bgAudio.play().catch(() => {});
+        } else {
+            bgAudio.pause();
+        }
+    }, [currentUser?.music]);
+
 
     return (
         <div className="w-full h-screen bg-[url('src/assets/images/sky.jpg')] bg-cover relative overflow-hidden">
@@ -137,39 +179,51 @@ const MainPage = () => {
 
             {balloons.map(b => (
                 <Balloon
-                    key={b.id} left={b.left} speed={getSpeed()} gameState={gameState} onPop={handlePop}
-                    onMiss={handleMiss} onEnd={() => setBalloons(prev => prev.filter(x => x.id !== b.id))}
+                    key={b.id} 
+                    left={b.left} 
+                    speed={getSpeed()} 
+                    gameState={gameState} 
+                    onPop={handlePop}
+                    onMiss={handleMiss} 
+                    onEnd={() => setBalloons(prev => prev.filter(x => x.id !== b.id))}
+                    soundEffects={currentUser?.soundEffects || false}
                 />
             ))}
 
             <div className="absolute right-0 top-0 w-80 bg-black/80 p-6 text-white z-20">
                 <Settings
-                    startTrim={startTrim} setStartTrim={setStartTrim}
-                    onUserChange={(user, updatedUsers) => { setCurrentUser(user), setUsers(updatedUsers)}}
+                    startTrim={startTrim}
+                    setStartTrim={setStartTrim}
+                    gameState={gameState}
+                    onCancel={cancelGame}
+                    startGame={startGame}
+                    pauseGame={pauseGame}
+                    continueGame={continueGame}
+                    currentUser={currentUser}
+                    onUserChange={(user, updatedUsers) => {
+                        setCurrentUser(user);
+                        setUsers(updatedUsers);
+                    }}
                 />
-
-                <div className="flex gap-3 mt-4">
-                    {gameState !== "running" && gameState !== "paused" && (
-                        <button onClick={startGame} className="w-full h-9 border-2 border-blue-400 rounded-full bg-blue-400">Start</button>
-                    )}
-                    {gameState === "running" && (
-                        <>
-                            <button onClick={startGame} className="w-full h-9 border-2 border-blue-400 rounded-full bg-blue-400">Restart</button>
-                            <button onClick={pauseGame} className="w-full h-9 border-2 border-blue-400 rounded-full">Stop</button>
-                        </>
-                    )}
-                    {gameState === "paused" && (
-                        <button onClick={continueGame} className="w-full h-9 border-2 border-blue-400 rounded-full">Continue</button>
-                    )}
-                </div>
-
-                <Leaderboard 
-                    usersList={users} setUsers={setUsers} 
-                    onUserChange={(user, updatedUsers) => { setCurrentUser(user), setUsers(updatedUsers) }}
+                <Leaderboard
+                    usersList={users} 
+                    setUsers={setUsers}
+                    gameState={gameState}
+                    currentUser={currentUser}
+                    onUserChange={(user, updatedUsers) => { 
+                        setCurrentUser(user), 
+                        setUsers(updatedUsers) 
+                    }}
                 />
                 <Modal
-                    open={modalOpen} onClose={() => setModalOpen(false)} result={modalResult} points={currentUser?.points || 0}
-                    onPlayAgain={() => { setModalOpen(false), startGame() }}
+                    open={modalOpen} 
+                    onClose={() => setModalOpen(false)} 
+                    result={modalResult} 
+                    points={currentUser?.points || 0}
+                    onPlayAgain={() => { 
+                        setModalOpen(false), 
+                        startGame() 
+                    }}
                 />
             </div>
         </div>

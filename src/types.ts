@@ -15,8 +15,14 @@ export interface BalloonType {
 
 export interface SettingsProps {
     onUserChange: (user: User, users: User[]) => void;
-    startTrim: boolean
-    setStartTrim: (value: boolean) => void;
+    startTrim: boolean;
+    setStartTrim: (v: boolean) => void;
+    gameState: "idle" | "running" | "paused" | "ended";
+    onCancel: () => void;
+    startGame: () => void;
+    pauseGame: () => void;
+    continueGame: () => void;
+    currentUser: User | null;
 }
 
 export interface BalloonProps {
@@ -26,11 +32,14 @@ export interface BalloonProps {
     onPop: () => void;
     onMiss: () => void;
     onEnd: () => void;
+    soundEffects: boolean
 }
 
 export interface LeaderboardProps {
     usersList: User[];
     setUsers: (users: User[]) => void;
+    gameState: "idle" | "running" | "paused" | "ended";
+    currentUser: User | null;
     onUserChange: (user: User, users: User[]) => void;
 }
 

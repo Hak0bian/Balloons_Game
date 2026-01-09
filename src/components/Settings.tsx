@@ -1,14 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Difficulty, SettingsProps, User } from "../types";
 import { loadUsers, saveUsers, saveCurrentUser } from "../storage";
 import { IoSettingsOutline, IoCloseOutline, } from "react-icons/io5";
 
-const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
+const Settings = ({ onUserChange, startTrim, setStartTrim, gameState, onCancel, startGame, pauseGame, continueGame, currentUser }: SettingsProps) => {
     const [nickname, setNickname] = useState("");
     const [difficulty, setDifficulty] = useState<Difficulty>("Easy");
-    const [soundEffects, setSoundEffects] = useState(true);
     const [music, setMusic] = useState(true);
+    const [soundEffects, setSoundEffects] = useState(true);
     const [nickTrim, setNickTrim] = useState(false)
+
+    useEffect(() => {
+        if (currentUser) {
+            setNickTrim(false);
+            setStartTrim(false);
+        }
+    }, [currentUser, setStartTrim]);
+
+    useEffect(() => {
+        if (!currentUser) return;
+
+        setMusic(currentUser.music);
+        setSoundEffects(currentUser.soundEffects);
+        setDifficulty(currentUser.difficulty);
+    }, [currentUser]);
+
 
     const saveSettings = () => {
         if (!nickname.trim()) {
@@ -22,8 +38,8 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
             nickname,
             points: existing?.points || 0,
             difficulty,
-            soundEffects: existing ? soundEffects : true,
-            music: existing ? music : true,
+            music: music,
+            soundEffects: soundEffects,
         };
 
         const updatedUsers = existing
@@ -34,11 +50,6 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
         saveCurrentUser(user);
         onUserChange(user, updatedUsers);
         setNickname("");
-
-        if (!existing) {
-            setSoundEffects(true);
-            setMusic(true);
-        }
     };
 
     const handleNicknameChange = (e: any) => {
@@ -46,6 +57,21 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
         setNickname(/^\s*$/.test(value) ? "" : value);
         if (nickTrim && value.trim()) setNickTrim(false);
         if (startTrim && value.trim()) setStartTrim(false);
+    };
+
+
+    const handleUserSettings = (key: "music" | "soundEffects", value: boolean) => {
+        if (key === "music") setMusic(value);
+        if (key === "soundEffects") setSoundEffects(value);
+
+        if (!currentUser) return;
+        const updatedUser = { ...currentUser, [key]: value };
+        const allUsers = loadUsers();
+        const updatedUsers = allUsers.map(u => u.nickname === updatedUser.nickname ? updatedUser : u);
+
+        saveCurrentUser(updatedUser);
+        saveUsers(updatedUsers);
+        onUserChange(updatedUser, updatedUsers);
     };
 
 
@@ -58,14 +84,19 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
 
             {/* Nickname */}
             <div>
-                <p className="mb-1">Create New User</p>
-                <div className="border border-blue-400 relative pr-5">
+                <p className="mb-1">Create New Player</p>
+                <div className={`border relative pr-5 
+                        ${nickTrim || startTrim ? "border-red-500" : "border-blue-400"}
+                        ${gameState === "running" || gameState === "paused" ? "pointer-events-none filter grayscale-50" : ""}
+                    `}>
                     <input
                         value={nickname}
                         className="w-full h-9 text-[14px] pl-3 outline-0"
                         placeholder="Nickname"
-                        maxLength={15}
                         onChange={handleNicknameChange}
+                        disabled={gameState === "running" || gameState === "paused"}
+                        maxLength={15}
+                        autoFocus
                     />
                     <button
                         className="absolute right-0 top-2 cursor-pointer"
@@ -74,14 +105,17 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
                         <IoCloseOutline className="w-5 h-5 text-gray-400" />
                     </button>
                 </div>
-                {nickTrim && <p className="text-[12px] text-red-500 mt-1 tracking-wider">Nickname Required!</p>}
-                {startTrim && <p className="text-[12px] text-red-500 mt-1 tracking-wider">Please write nickname and save</p>}
+                {(nickTrim || startTrim) && (
+                    <p className="text-[12px] text-red-500 mt-1 tracking-wider">
+                        {nickTrim ? "Nickname Required!" : "Please create or select nickname"}
+                    </p>
+                )}
             </div>
 
             {/* Difficulty */}
             <div>
                 <p className="mb-2">Difficulty</p>
-                <div className="flex gap-3">
+                <div className={`flex gap-3 ${gameState === "running" || gameState === "paused" ? "pointer-events-none filter grayscale-50" : ""}`}>
                     {(["Easy", "Medium", "Hard"] as Difficulty[]).map((d) => (
                         <button
                             key={d}
@@ -100,33 +134,61 @@ const Settings = ({ onUserChange, startTrim, setStartTrim }: SettingsProps) => {
 
             {/* Sound settings */}
             <div>
-                <div className="flex gap-2 mb-2">
-                    <input
-                        type="checkbox"
-                        checked={soundEffects}
-                        onChange={() => setSoundEffects(!soundEffects)}
-                        className="w-4"
-                    />
-                    <span>Sound Effects</span>
-                </div>
-
                 <div className="flex gap-2">
                     <input
                         type="checkbox"
                         checked={music}
-                        onChange={() => setMusic(!music)}
+                        onChange={(e) => handleUserSettings("music", e.target.checked)}
                         className="w-4"
                     />
                     <span>Music</span>
                 </div>
+
+                <div className="flex gap-2 mb-2">
+                    <input
+                        type="checkbox"
+                        checked={soundEffects}
+                        className="w-4"
+                        onChange={(e) => handleUserSettings("soundEffects", e.target.checked)}
+                    />
+                    <span>Sound Effects</span>
+                </div>
             </div>
 
-            <button
-                onClick={saveSettings}
-                className="w-full h-9 border-2 border-blue-400 text-blue-400 cursor-pointer rounded-full hover:bg-blue-400 hover:text-white transition-all transition-300"
-            >
-                Save
-            </button>
+            {/* Save or New Player */}
+            {gameState === "idle" || gameState === "ended" ? (
+                <button
+                    onClick={saveSettings}
+                    className="w-full h-9 border-2 border-blue-400 text-blue-400 cursor-pointer rounded-full hover:bg-blue-400 hover:text-white transition-all"
+                >
+                    Save
+                </button>
+            ) : (
+                <button
+                    onClick={onCancel}
+                    className="w-full h-9 border-2 border-red-500 text-red-500 cursor-pointer rounded-full
+                        hover:bg-red-500 hover:text-white transition-all"
+                >
+                    New Player
+                </button>
+            )}
+
+            {/* Start | Restart | Stop | Continue */}
+            <div className="flex gap-3">
+                {gameState !== "running" && gameState !== "paused" && (
+                    <button onClick={startGame} className="w-full h-9 border-2 border-blue-400 rounded-full bg-blue-400 cursor-pointer hover:bg-transparent transition-all transition-300">Start</button>
+                )}
+                {gameState === "running" && (
+                    <>
+                        <button onClick={startGame} className="w-full h-9 border-2 border-blue-400 rounded-full bg-blue-400 cursor-pointer hover:bg-transparent transition-all transition-300">Restart</button>
+                        <button onClick={pauseGame} className="w-full h-9 border-2 border-blue-400 rounded-full cursor-pointer hover:bg-blue-400 transition-all transition-300">Stop</button>
+                    </>
+                )}
+                {gameState === "paused" && (
+                    <button onClick={continueGame} className="w-full h-9 border-2 border-blue-400 rounded-full cursor-pointer hover:bg-blue-400 transition-all transition-300">Continue</button>
+                )}
+            </div>
+
         </div>
     );
 };
