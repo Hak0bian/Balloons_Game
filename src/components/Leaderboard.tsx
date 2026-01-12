@@ -2,12 +2,13 @@ import { handleClear, saveUsers } from "../storage";
 import type { LeaderboardProps, User } from "../types";
 import { GiTrophyCup } from "react-icons/gi";
 import { FaMedal } from "react-icons/fa";
-import { CiEdit } from "react-icons/ci";
+import { BiSolidEditAlt } from "react-icons/bi";
 import { AiOutlineCheck } from "react-icons/ai";
+import { RiDeleteBinLine } from "react-icons/ri";
 import { useState } from "react";
 
 
-const Leaderboard = ({ usersList, setUsers, gameState, currentUser, onUserChange }: LeaderboardProps) => {
+const Leaderboard = ({ usersList, setUsers, gameState, currentUser, onUserChange, onUserDelete }: LeaderboardProps) => {
     const sorted = [...usersList].sort((a, b) => b.points - a.points);
     const medalColors = ["#FACC15", "#C0C0C0", "#CD7F32"];
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -33,19 +34,36 @@ const Leaderboard = ({ usersList, setUsers, gameState, currentUser, onUserChange
         const trimmed = editValue.trim();
         if (!trimmed) return alert("Nickname cannot be empty!");
 
-        if (trimmed !== oldUser.nickname) {
-            const updatedUser: User = { ...oldUser, nickname: trimmed };
-            const updatedUsers = usersList.map(u =>
-                u.nickname === oldUser.nickname ? updatedUser : u
-            );
-            setUsers(updatedUsers);
-            saveUsers(updatedUsers);
-            if (currentUser?.nickname === oldUser.nickname) {
+        const updatedUser: User = {
+            ...oldUser,
+            nickname: trimmed,
+        };
+
+        const updatedUsers = usersList.map(u =>
+            u.id === oldUser.id ? updatedUser : u
+        );
+
+        setUsers(updatedUsers);
+        saveUsers(updatedUsers);
+
+        if (currentUser?.id === oldUser.id) {
             onUserChange(updatedUser, updatedUsers);
         }
-        }
+
         setEditingIndex(null);
     };
+
+
+    const handleDeleteUser = (user: User) => {
+        const updatedUsers = usersList.filter(u => u.id !== user.id);
+        setUsers(updatedUsers);
+        saveUsers(updatedUsers);
+
+        if (currentUser?.nickname === user.nickname) {
+            onUserDelete(user.nickname);
+        }
+    };
+
 
     return (
         <div>
@@ -78,13 +96,16 @@ const Leaderboard = ({ usersList, setUsers, gameState, currentUser, onUserChange
                             <span>{u.points}</span>
                             {editingIndex === i ? (
                                 <button onClick={() => handleSaveClick(i)}>
-                                    <AiOutlineCheck className="w-5 h-5 text-green-500 cursor-pointer" />
+                                    <AiOutlineCheck className="w-4 h-4 text-green-500 cursor-pointer" />
                                 </button>
                             ) : (
                                 <button onClick={() => handleEditClick(i, u.nickname)}>
-                                    <CiEdit className="w-4 h-4 text-blue-400 cursor-pointer" />
+                                    <BiSolidEditAlt className="w-4 h-4 text-blue-400 cursor-pointer" />
                                 </button>
                             )}
+                            <button onClick={() => handleDeleteUser(u)}>
+                                <RiDeleteBinLine className="w-4 h-4 text-red-400 cursor-pointer" />
+                            </button>
                         </div>
                     </div>
                 ))}

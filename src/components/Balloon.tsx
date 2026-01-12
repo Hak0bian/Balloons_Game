@@ -22,7 +22,6 @@ const Balloon = ({ left, speed, gameState, onPop, onMiss, onEnd, soundEffects }:
         setTimeout(onEnd, 300);
     };
 
-
     return (
         <button
             onClick={handleClick}

@@ -1,9 +1,11 @@
-export type Difficulty = "Easy" | "Medium" | "Hard";
+export type GameDifficulty = "Easy" | "Medium" | "Hard";
+export type GameState = "idle" | "running" | "paused" | "ended";
 
 export interface User {
+    id: string; 
     nickname: string;
     points: number;
-    difficulty: Difficulty;
+    difficulty: GameDifficulty;
     soundEffects: boolean;
     music: boolean;
 }
@@ -41,6 +43,7 @@ export interface LeaderboardProps {
     gameState: "idle" | "running" | "paused" | "ended";
     currentUser: User | null;
     onUserChange: (user: User, users: User[]) => void;
+    onUserDelete: (nickname: string) => void;
 }
 
 export interface ModalProps {
@@ -49,4 +52,45 @@ export interface ModalProps {
     result: "win" | "lose";
     points: number;
     onPlayAgain: () => void;
+    onCancel: () => void;
 }
+
+export interface UseGameProps {
+    currentUser: User | null;
+    users: User[];
+    setUsers: (users: User[]) => void;
+    setCurrentUser: (user: User | null) => void;
+    removeCurrentUser: () => void
+}
+
+export interface NicknameProps {
+    nickname: string;
+    setNickname: (value: string) => void;
+    nickTrim: boolean;
+    setNickTrim: (value: boolean) => void;
+    startTrim: boolean;
+    setStartTrim: (value: boolean) => void;
+    gameState: "idle" | "running" | "paused" | "ended";
+}
+
+export interface DifficultyProps {
+    gameState: "idle" | "running" | "paused" | "ended";
+    difficulty: "Easy" | "Medium" | "Hard";
+    setDifficulty: (value: "Easy" | "Medium" | "Hard") => void;
+}
+
+export interface SoundProps {
+    music: boolean;
+    soundEffects: boolean;
+    handleUserSettings: (key: "music" | "soundEffects", value: boolean) => void;
+}
+
+export interface ButtonsProps {
+    gameState: "idle" | "running" | "paused" | "ended";
+    saveSettings: () => void;
+    onCancel: () => void;
+    startGame: () => void;
+    pauseGame: () => void;
+    continueGame: () => void;
+}
+
