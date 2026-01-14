@@ -8,9 +8,9 @@ const Sound = ({ music, soundEffects, handleUserSettings } : SoundProps) => {
                     type="checkbox"
                     checked={music}
                     onChange={(e) => handleUserSettings("music", e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                 />
-                <span>Music</span>
+                <span className="text-[14px]">Music</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -18,9 +18,9 @@ const Sound = ({ music, soundEffects, handleUserSettings } : SoundProps) => {
                     type="checkbox"
                     checked={soundEffects}
                     onChange={(e) => handleUserSettings("soundEffects", e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                 />
-                <span>Sound Effects</span>
+                <span className="text-[14px]">Sound Effects</span>
             </label>
         </div>
     )

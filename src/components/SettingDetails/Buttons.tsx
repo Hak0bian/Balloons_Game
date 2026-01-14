@@ -1,15 +1,24 @@
-import { classes } from "../../tailwindClasses"
-import type { ButtonsProps } from "../../types"
+import { classes } from "../../tailwindClasses";
+import type { ButtonsProps } from "../../types";
 
-const Buttons = ({ gameState, saveSettings, onCancel, startGame, pauseGame, continueGame} : ButtonsProps) => {
+const Buttons = ({ gameState, saveSettings, onCancel, startGame, pauseGame, continueGame, isEditing }: ButtonsProps) => {
     return (
         <div>
-            {
-                gameState === "idle" || gameState === "ended"
-                    ? (<button onClick={saveSettings} className={`${classes.transparentBtn} mb-3`}>Save</button>)
-                    : (<button onClick={onCancel} className={classes.cancelBtn}>New Player</button>)
-            }
+            {/* Save / Save Edits */}
+            {(gameState === "idle" || gameState === "ended") && (
+                <button onClick={saveSettings} className={`${classes.transparentBtn} mb-3`}>
+                    {isEditing ? "Save Edits" : "Save"}
+                </button>
+            )}
 
+            {/* Delete Player */}
+            {!(gameState === "idle" || gameState === "ended") && (
+                <button onClick={onCancel} className={classes.cancelBtn}>
+                    Delete Player
+                </button>
+            )}
+
+            {/* Start / Restart / Stop / Continue */}
             <div className="flex gap-3">
                 {gameState !== "running" && gameState !== "paused" && (
                     <button onClick={startGame} className={classes.filledBtn}>Start</button>
@@ -25,7 +34,7 @@ const Buttons = ({ gameState, saveSettings, onCancel, startGame, pauseGame, cont
                 )}
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default Buttons
+export default Buttons;

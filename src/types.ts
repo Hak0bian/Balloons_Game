@@ -2,7 +2,7 @@ export type GameDifficulty = "Easy" | "Medium" | "Hard";
 export type GameState = "idle" | "running" | "paused" | "ended";
 
 export interface User {
-    id: string; 
+    id: string;
     nickname: string;
     points: number;
     difficulty: GameDifficulty;
@@ -13,6 +13,8 @@ export interface User {
 export interface BalloonType {
     id: number;
     left: number;
+    color?: string;
+    bonus?: number;
 }
 
 export interface SettingsProps {
@@ -25,17 +27,20 @@ export interface SettingsProps {
     pauseGame: () => void;
     continueGame: () => void;
     currentUser: User | null;
+    editingUser?: User | null;
 }
 
 export interface BalloonProps {
     left: number;
     speed: number;
-    gameState: "idle" | "running" | "paused" | "ended";
-    onPop: () => void;
+    gameState: GameState;
+    onPop: (bonusSeconds?: number) => void;
     onMiss: () => void;
     onEnd: () => void;
-    soundEffects: boolean
-}
+    soundEffects?: boolean;
+    color?: string;
+    bonus?: number;
+};
 
 export interface LeaderboardProps {
     usersList: User[];
@@ -43,7 +48,9 @@ export interface LeaderboardProps {
     gameState: "idle" | "running" | "paused" | "ended";
     currentUser: User | null;
     onUserChange: (user: User, users: User[]) => void;
-    onUserDelete: (nickname: string) => void;
+    onUserDelete: (user: User) => void;
+    startEditingUser: (user: User) => void
+    setCurrentUser: (user: User | null) => void;
 }
 
 export interface ModalProps {
@@ -52,26 +59,25 @@ export interface ModalProps {
     result: "win" | "lose";
     points: number;
     onPlayAgain: () => void;
-    onCancel: () => void;
+    missed: number
 }
 
-export interface UseGameProps {
-    currentUser: User | null;
-    users: User[];
-    setUsers: (users: User[]) => void;
-    setCurrentUser: (user: User | null) => void;
-    removeCurrentUser: () => void
-}
+
 
 export interface NicknameProps {
-    nickname: string;
-    setNickname: (value: string) => void;
-    nickTrim: boolean;
-    setNickTrim: (value: boolean) => void;
-    startTrim: boolean;
-    setStartTrim: (value: boolean) => void;
     gameState: "idle" | "running" | "paused" | "ended";
-}
+    currentUser?: User | null;
+    editingUser?: User | null;
+    nickname: string;
+    nickTrim: boolean;
+    startTrim: boolean;
+    duplicate: boolean;
+    setNickname: (value: string) => void;
+    setNickTrim: (value: boolean) => void;
+    setStartTrim: (value: boolean) => void;
+    setDuplicate: (value: boolean) => void;
+};
+
 
 export interface DifficultyProps {
     gameState: "idle" | "running" | "paused" | "ended";
@@ -92,5 +98,20 @@ export interface ButtonsProps {
     startGame: () => void;
     pauseGame: () => void;
     continueGame: () => void;
+    isEditing: boolean
 }
 
+export interface UseGameProps {
+    currentUser: User | null;
+    users: User[];
+    setUsers: (users: User[]) => void;
+    setCurrentUser: (user: User | null) => void;
+    removeCurrentUser: () => void
+}
+
+export interface useSettingsProps {
+    currentUser: User | null,
+    editingUser: User | null,
+    setStartTrim: (v: boolean) => void
+    onUserChange: (user: User, users: User[]) => void
+}

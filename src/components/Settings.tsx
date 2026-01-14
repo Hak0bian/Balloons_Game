@@ -1,80 +1,109 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, SettingsProps, User } from "../types";
 import { loadUsers, saveUsers, saveCurrentUser } from "../storage";
-import { IoSettingsOutline, } from "react-icons/io5";
 import { Nickname, Difficulty, Sound, Buttons } from "./SettingDetails";
 
-const Settings = ({ onUserChange, startTrim, setStartTrim, gameState, onCancel, startGame, pauseGame, continueGame, currentUser }: SettingsProps) => {
+
+const Settings = ({ startTrim, gameState, currentUser, editingUser,
+    onUserChange, setStartTrim, onCancel, startGame, pauseGame, continueGame }: SettingsProps) => {
     const [nickname, setNickname] = useState("");
     const [difficulty, setDifficulty] = useState<GameDifficulty>("Easy");
     const [music, setMusic] = useState(true);
     const [soundEffects, setSoundEffects] = useState(true);
     const [nickTrim, setNickTrim] = useState(false)
+    const [duplicate, setDuplicate] = useState(false);
 
     useEffect(() => {
-        if (currentUser) {
-            setNickTrim(false);
+        if (editingUser) {
+            setNickname(editingUser.nickname);
+            setDifficulty(editingUser.difficulty);
+            setMusic(editingUser.music);
+            setSoundEffects(editingUser.soundEffects);
             setStartTrim(false);
         }
-    }, [currentUser, setStartTrim]);
+    }, [editingUser]);
 
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser || editingUser) return;
+        setDifficulty(currentUser.difficulty);
         setMusic(currentUser.music);
         setSoundEffects(currentUser.soundEffects);
-        setDifficulty(currentUser.difficulty);
-    }, [currentUser]);
-
+    }, [currentUser?.id]);
 
     const saveSettings = () => {
-        if (!nickname.trim()) {
+        const trimmedNickname = nickname.trim();
+
+        if (!trimmedNickname) {
             setNickTrim(true);
             return;
         }
-
         const users = loadUsers();
-        const existing = users.find(u => u.nickname === nickname);
-        const user: User = {
-            id: crypto.randomUUID(),
-            nickname,
-            points: existing?.points || 0,
-            difficulty,
-            music: music,
-            soundEffects: soundEffects,
-        };
 
-        const updatedUsers = existing
-            ? users.map(u => (u.nickname === nickname ? user : u))
-            : [...users, user];
+        // duplicate
+        const isDuplicate = users.some(u => u.nickname === trimmedNickname && (!editingUser || u.id !== editingUser.id));
+        if (isDuplicate) {
+            setDuplicate(true);
+            return;
+        }
+
+        // Save/Save Edits
+        setDuplicate(false);
+
+        let user: User;
+        if (editingUser) {
+            user = {
+                ...editingUser,
+                nickname: trimmedNickname,
+                difficulty,
+                music,
+                soundEffects,
+            };
+        } else {
+            user = {
+                id: Date.now().toString(),
+                nickname: trimmedNickname,
+                points: 0,
+                difficulty,
+                music,
+                soundEffects,
+            };
+        }
+
+        // Save users/currentUser
+        const updatedUsers = users.map(u => u.id === user.id ? user : u);
+        if (!updatedUsers.some(u => u.id === user.id)) updatedUsers.push(user);
 
         saveUsers(updatedUsers);
         saveCurrentUser(user);
         onUserChange(user, updatedUsers);
         setNickname("");
+        setNickTrim(false);
+        setStartTrim(false);
+
+        if (!editingUser) {
+            setNickname("");
+            setDifficulty("Easy");
+            setMusic(true);
+            setSoundEffects(true);
+        }
     };
+
 
     const handleUserSettings = (key: "music" | "soundEffects", value: boolean) => {
         if (key === "music") setMusic(value);
         if (key === "soundEffects") setSoundEffects(value);
         if (!currentUser) return;
-        
         const updatedUser = { ...currentUser, [key]: value };
         const allUsers = loadUsers();
-        const updatedUsers = allUsers.map(u => u.nickname === updatedUser.nickname ? updatedUser : u);
+        const updatedUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
 
         saveCurrentUser(updatedUser);
         saveUsers(updatedUsers);
         onUserChange(updatedUser, updatedUsers);
     };
 
-
     return (
-        <div className="flex flex-col gap-5">
-            <div className="flex items-center gap-2">
-                <IoSettingsOutline className="w-6 h-6 text-blue-400" />
-                <h2 className="text-[24px] mb-1">Settings</h2>
-            </div>
-
+        <div className="flex flex-col gap-3 mb-4">
             <Nickname
                 nickname={nickname}
                 setNickname={setNickname}
@@ -82,8 +111,13 @@ const Settings = ({ onUserChange, startTrim, setStartTrim, gameState, onCancel, 
                 setNickTrim={setNickTrim}
                 startTrim={startTrim}
                 setStartTrim={setStartTrim}
+                duplicate={duplicate}
+                setDuplicate={setDuplicate}
+                currentUser={currentUser}
+                editingUser={editingUser}
                 gameState={gameState}
             />
+
             <Difficulty
                 gameState={gameState}
                 difficulty={difficulty}
@@ -101,6 +135,7 @@ const Settings = ({ onUserChange, startTrim, setStartTrim, gameState, onCancel, 
                 startGame={startGame}
                 pauseGame={pauseGame}
                 continueGame={continueGame}
+                isEditing={!!editingUser}
             />
         </div>
     );

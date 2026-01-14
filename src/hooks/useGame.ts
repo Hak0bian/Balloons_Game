@@ -11,8 +11,11 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
     const [startTrim, setStartTrim] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalResult, setModalResult] = useState<"win" | "lose">("win");
-    const spawnRef = useRef<number | null>(null);
+    const balloonRef = useRef<number | null>(null);
     const timerRef = useRef<number | null>(null);
+    const spawnRef = useRef<number | null>(null);
+    const lastGoldenRef = useRef<number>(0);
+    const [isDesktop, setIsDesktop] = useState(window.matchMedia("(min-width: 1024px)").matches);
 
     const getSpeed = () => {
         switch (currentUser?.difficulty) {
@@ -31,7 +34,25 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
 
     const startIntervals = () => {
         spawnRef.current = window.setInterval(() => {
-            setBalloons(prev => [...prev, { id: Math.random(), left: Math.random() * 75 }]);
+            setBalloons(prev => {
+                const now = Date.now();
+                const isGolden = now - lastGoldenRef.current >= 7000;
+                const minLeft = isDesktop ? 20 : 10;
+                const maxLeft = isDesktop ? 75 : 90;
+
+                if (isGolden) {
+                    lastGoldenRef.current = now;
+                }
+
+                return [
+                    ...prev,
+                    {
+                        id: Math.random(),
+                        left: Math.random() * (maxLeft - minLeft) + minLeft,
+                        ...(isGolden && { color: "#FACC15", bonus: 3 }),
+                    },
+                ];
+            });
         }, 800);
 
         timerRef.current = window.setInterval(() => {
@@ -51,6 +72,8 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
             setGameState("idle");
             return;
         }
+
+        lastGoldenRef.current = Date.now();
         setStartTrim(false);
         clearIntervals();
         setBalloons([]);
@@ -89,8 +112,10 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
         setModalOpen(true);
     };
 
-    const handlePop = () => {
+    const handlePop = (bonusSeconds = 0) => {
         if (!currentUser) return;
+        if (bonusSeconds) setTimeLeft(t => t + bonusSeconds);
+
         const updatedUser = { ...currentUser, points: currentUser.points + 1 };
         setCurrentUser(updatedUser);
 
@@ -110,11 +135,6 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
         removeCurrentUser()
     };
 
-    const cancelAfterGame = () => {
-        cancelGame()
-        setModalOpen(false)
-    }
-    
     const handleMiss = () => setMissed(m => m + 1);
 
     useEffect(() => {
@@ -124,8 +144,11 @@ export const useGame = ({ currentUser, users, setUsers, setCurrentUser, removeCu
     }, [missed, gameState]);
 
 
-    return { 
-        balloons, gameState, timeLeft, startTrim, setStartTrim, getSpeed, startGame, 
-        pauseGame, continueGame, endGame, handlePop, handleMiss, cancelGame, setBalloons, modalOpen, setModalOpen, modalResult, cancelAfterGame
+    return {
+        balloons, gameState, timeLeft, startTrim, setStartTrim,
+        getSpeed, startGame, missed, pauseGame, continueGame,
+        endGame, handlePop, handleMiss, cancelGame, setBalloons,
+        modalOpen, setModalOpen, modalResult, balloonRef,
+        isDesktop, setIsDesktop
     };
 };

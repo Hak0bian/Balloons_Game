@@ -5,6 +5,7 @@ import { loadUsers, saveUsers, loadCurrentUser, saveCurrentUser } from "../stora
 export const useUsers = () => {
     const [users, setUsers] = useState<User[]>(loadUsers());
     const [currentUser, setCurrentUser] = useState<User | null>(loadCurrentUser());
+    const [editingUser, setEditingUser] = useState<User | null>(null); // <-- նոր state
 
     useEffect(() => {
         if (currentUser) saveCurrentUser(currentUser);
@@ -19,6 +20,12 @@ export const useUsers = () => {
         setUsers(updatedUsers);
         setCurrentUser(user);
         saveUsers(updatedUsers);
+        setEditingUser(null);
+    };
+
+    const startEditingUser = (user: User) => {
+        setEditingUser(user);
+        setCurrentUser(null);
     };
 
     const removeCurrentUser = () => {
@@ -29,14 +36,18 @@ export const useUsers = () => {
 
         setCurrentUser(null);
         localStorage.removeItem("current_user");
+        setEditingUser(null);
     };
+
 
     return {
         users,
         currentUser,
+        editingUser,
         setCurrentUser,
         setUsers,
         addOrUpdateUser,
+        startEditingUser,
         removeCurrentUser
     };
 };
