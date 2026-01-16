@@ -5,7 +5,7 @@ import { loadUsers, saveUsers, loadCurrentUser, saveCurrentUser } from "../stora
 export const useUsers = () => {
     const [users, setUsers] = useState<User[]>(loadUsers());
     const [currentUser, setCurrentUser] = useState<User | null>(loadCurrentUser());
-    const [editingUser, setEditingUser] = useState<User | null>(null); // <-- նոր state
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
     useEffect(() => {
         if (currentUser) saveCurrentUser(currentUser);

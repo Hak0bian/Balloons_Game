@@ -132,7 +132,7 @@ const MainPage = () => {
                 />
             ))}
 
-            <div className="absolute right-0 top-0 w-60 lg:w-65 bg-black/85 p-2 text-white z-10 flex flex-col gap-1">
+            <div className="absolute right-0 top-0 w-60 lg:w-65 bg-black/85 p-2 lg:p-3 text-white z-10 flex flex-col gap-1">
                 <div>
                     <div className="flex gap-5 lg:flex-col lg:gap-0">
                         <p className="lg:text-[24px] text-red-500 mt-0.5">Time: {timeLeft}s</p>
